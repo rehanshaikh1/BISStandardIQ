@@ -1,4 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+  useLocation,
+} from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/common/Header';
 import { Footer } from './components/common/Footer';
@@ -6,6 +14,7 @@ import { UserSidebar } from './components/common/UserSidebar';
 import { AdminSidebar } from './components/common/AdminSidebar';
 import { TopScreenNavigator } from './components/common/TopScreenNavigator';
 import { GuestLoginModal } from './components/common/GuestLoginModal';
+import { Menu, ShieldCheck } from 'lucide-react';
 
 // Public Screens (1-7)
 import { Screen01_PublicLanding } from './screens/public/Screen01_PublicLanding';
@@ -50,171 +59,293 @@ import { Screen33_AdminDocumentManagement } from './screens/admin/Screen33_Admin
 import { Screen34_AdminSystemLogs } from './screens/admin/Screen34_AdminSystemLogs';
 import { Screen35_AdminSettings } from './screens/admin/Screen35_AdminSettings';
 
-const AppContent: React.FC = () => {
-  const { currentScreen, userRole } = useApp();
+/**
+ * ScrollToTop helper on route change
+ */
+const ScrollToTop: React.FC = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [pathname]);
+  return null;
+};
 
-  const isPublicScreen = currentScreen.startsWith('public-');
-  const isUserScreen = currentScreen.startsWith('user-');
-  const isAdminScreen = currentScreen.startsWith('admin-');
-  const isAuthScreen = currentScreen.startsWith('auth-');
+/**
+ * Access Control Gate for Registered User Routes (/user/*)
+ */
+const ProtectedUserRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { userRole } = useApp();
+  const location = useLocation();
 
-  const renderActiveScreen = () => {
-    switch (currentScreen) {
-      // Public Screens (1-7)
-      case 'public-landing':
-        return <Screen01_PublicLanding />;
-      case 'public-standards-explorer':
-        return <Screen02_PublicStandardsExplorer />;
-      case 'public-standard-detail':
-        return <Screen03_PublicStandardDetail />;
-      case 'public-compliance-checker':
-        return <Screen04_PublicComplianceChecker />;
-      case 'public-licence-verification':
-        return <Screen05_PublicLicenceVerification />;
-      case 'public-lab-finder':
-        return <Screen06_PublicLabFinder />;
-      case 'public-lab-detail':
-        return <Screen07_PublicLabDetail />;
+  if (userRole === 'guest') {
+    return (
+      <Navigate
+        to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`}
+        replace
+      />
+    );
+  }
 
-      // User Screens (8-20)
-      case 'user-dashboard':
-        return <Screen08_UserDashboard />;
-      case 'user-ai-assistant':
-        return <Screen09_UserAIAssistant />;
-      case 'user-standards-explorer':
-        return <Screen10_UserStandardsExplorer />;
-      case 'user-standard-detail':
-        return <Screen11_UserStandardDetail />;
-      case 'user-compliance-wizard':
-        return <Screen12_UserComplianceWizard />;
-      case 'user-compliance-results':
-        return <Screen13_UserComplianceResults />;
-      case 'user-pdf-analysis':
-        return <Screen14_UserPDFAnalysis />;
-      case 'user-licence-verification':
-        return <Screen15_UserLicenceVerification />;
-      case 'user-lab-finder':
-        return <Screen16_UserLabFinder />;
-      case 'user-lab-detail':
-        return <Screen17_UserLabDetail />;
-      case 'user-reports-history':
-        return <Screen18_UserReportsHistory />;
-      case 'user-profile':
-        return <Screen19_UserProfile />;
-      case 'user-settings':
-        return <Screen20_UserSettings />;
+  return <>{children}</>;
+};
 
-      // Auth Screens (21-24)
-      case 'auth-login':
-        return <Screen21_AuthLogin />;
-      case 'auth-register':
-        return <Screen22_AuthRegister />;
-      case 'auth-forgot-password':
-        return <Screen23_AuthForgotPassword />;
-      case 'auth-reset-password':
-        return <Screen24_AuthResetPassword />;
+/**
+ * Access Control Gate for Admin Routes (/admin/*)
+ */
+const ProtectedAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { userRole } = useApp();
+  const location = useLocation();
 
-      // Admin Screens (25-35)
-      case 'admin-dashboard':
-        return <Screen25_AdminDashboard />;
-      case 'admin-manage-standards':
-        return <Screen26_AdminManageStandards />;
-      case 'admin-add-edit-standard':
-        return <Screen27_AdminAddEditStandard />;
-      case 'admin-product-categories':
-        return <Screen28_AdminProductCategories />;
-      case 'admin-compliance-rules':
-        return <Screen29_AdminComplianceRules />;
-      case 'admin-testing-labs':
-        return <Screen30_AdminTestingLabs />;
-      case 'admin-user-management':
-        return <Screen31_AdminUserManagement />;
-      case 'admin-rag-knowledge-base':
-        return <Screen32_AdminRAGKnowledgeBase />;
-      case 'admin-document-management':
-        return <Screen33_AdminDocumentManagement />;
-      case 'admin-system-logs':
-        return <Screen34_AdminSystemLogs />;
-      case 'admin-settings':
-        return <Screen35_AdminSettings />;
+  if (userRole === 'guest') {
+    return (
+      <Navigate
+        to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`}
+        replace
+      />
+    );
+  }
 
-      default:
-        return <Screen01_PublicLanding />;
-    }
-  };
+  if (userRole !== 'admin') {
+    return <Navigate to="/user/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+/**
+ * Public Layout Wrapper (Header + Content + Footer)
+ */
+const PublicLayout: React.FC = () => {
+  return (
+    <div className="min-h-screen flex flex-col bg-[#F8FAFC]">
+      <Header />
+      <main className="flex-1">
+        <Outlet />
+      </main>
+      <Footer />
+    </div>
+  );
+};
+
+/**
+ * Auth Layout Wrapper
+ */
+const AuthLayout: React.FC = () => {
+  return (
+    <div className="min-h-screen flex flex-col bg-[#F8FAFC]">
+      <Outlet />
+    </div>
+  );
+};
+
+/**
+ * User Portal Layout (Sidebar + Top Bar + Responsive Content)
+ */
+const UserLayout: React.FC = () => {
+  const { setIsMobileSidebarOpen } = useApp();
+  const location = useLocation();
+
+  // Extract readable title from path
+  const pathPart = location.pathname.split('/')[2] || 'dashboard';
+  const screenTitle = pathPart.replace(/-/g, ' ');
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC]">
-      {/* Top Universal Screen Review Bar */}
-      {/* <TopScreenNavigator /> */}
+      <div className="flex-1 flex flex-col md:flex-row">
+        {/* User Sidebar Drawer & Desktop Panel */}
+        <UserSidebar />
+
+        {/* Content Shell */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Top Bar with Mobile Hamburger Toggle */}
+          <header className="h-16 bg-white border-b border-slate-200 px-4 sm:px-6 flex items-center justify-between shrink-0 sticky top-0 z-20">
+            <div className="flex items-center gap-3 text-xs text-slate-500">
+              <button
+                type="button"
+                onClick={() => setIsMobileSidebarOpen(true)}
+                className="md:hidden p-1.5 -ml-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                aria-label="Open navigation sidebar"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-slate-800">Workspace</span>
+                <span aria-hidden="true" className="text-slate-300">/</span>
+                <span className="capitalize font-medium text-slate-600">{screenTitle}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-slate-500 hidden sm:inline-flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Regulatory DB:</span>
+                <strong className="text-emerald-700">Online</strong>
+              </span>
+            </div>
+          </header>
+
+          {/* Main Route Content */}
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+            <Outlet />
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Admin Portal Layout (Sidebar + Top Bar + Responsive Content)
+ */
+const AdminLayout: React.FC = () => {
+  const { setIsMobileSidebarOpen } = useApp();
+  const location = useLocation();
+
+  // Extract readable title from path
+  const pathPart = location.pathname.split('/')[2] || 'dashboard';
+  const screenTitle = pathPart.replace(/-/g, ' ');
+
+  return (
+    <div className="min-h-screen flex flex-col bg-[#F8FAFC]">
+      <div className="flex-1 flex flex-col md:flex-row">
+        {/* Admin Sidebar Drawer & Desktop Panel */}
+        <AdminSidebar />
+
+        {/* Content Shell */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Top Bar with Mobile Hamburger Toggle */}
+          <header className="h-16 bg-white border-b border-slate-200 px-4 sm:px-6 flex items-center justify-between shrink-0 sticky top-0 z-20">
+            <div className="flex items-center gap-3 text-xs text-slate-500">
+              <button
+                type="button"
+                onClick={() => setIsMobileSidebarOpen(true)}
+                className="md:hidden p-1.5 -ml-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                aria-label="Open admin navigation sidebar"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-amber-700">Admin Console</span>
+                <span aria-hidden="true" className="text-slate-300">/</span>
+                <span className="capitalize font-medium text-slate-600">{screenTitle}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded font-semibold text-[11px] inline-flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+                <span>Administrative Privilege</span>
+              </span>
+            </div>
+          </header>
+
+          {/* Main Route Content */}
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+            <Outlet />
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Core Application Router with All 35 Screens Mapped to Dedicated URLs
+ */
+const AppShell: React.FC = () => {
+  return (
+    <div className="min-h-screen flex flex-col bg-[#F8FAFC]">
+      {/* Universal Screen Review Bar */}
+      <TopScreenNavigator />
 
       {/* Guest Login Modal for Gated Features */}
       <GuestLoginModal />
 
-      {/* Layout Routing */}
-      {isPublicScreen && (
-        <>
-          <Header />
-          <main className="flex-1">{renderActiveScreen()}</main>
-          <Footer />
-        </>
-      )}
+      <ScrollToTop />
 
-      {isAuthScreen && (
-        <main className="flex-1">{renderActiveScreen()}</main>
-      )}
+      <Routes>
+        {/* 1. Public / Guest Routes (Screens 1 - 7) */}
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<Screen01_PublicLanding />} />
+          <Route path="/standards" element={<Screen02_PublicStandardsExplorer />} />
+          <Route path="/standards/:id" element={<Screen03_PublicStandardDetail />} />
+          <Route path="/compliance-checker" element={<Screen04_PublicComplianceChecker />} />
+          <Route path="/verify-licence" element={<Screen05_PublicLicenceVerification />} />
+          <Route path="/laboratories" element={<Screen06_PublicLabFinder />} />
+          <Route path="/laboratories/:id" element={<Screen07_PublicLabDetail />} />
+        </Route>
 
-      {isUserScreen && (
-        <div className="flex-1 flex flex-col md:flex-row">
-          <UserSidebar />
-          <div className="flex-1 flex flex-col min-w-0">
-            {/* User Main Top Header */}
-            <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <span className="font-semibold text-slate-800">Workspace</span>
-                <span aria-hidden="true">/</span>
-                <span className="capitalize">{currentScreen.replace('user-', '').replace(/-/g, ' ')}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-slate-500 hidden sm:inline">
-                  Regulatory DB: <strong className="text-emerald-700">Online</strong>
-                </span>
-              </div>
-            </header>
-            <main className="flex-1 p-6 sm:p-8 overflow-y-auto">{renderActiveScreen()}</main>
-          </div>
-        </div>
-      )}
+        {/* 2. Authentication Routes (Screens 21 - 24) */}
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<Screen21_AuthLogin />} />
+          <Route path="/register" element={<Screen22_AuthRegister />} />
+          <Route path="/forgot-password" element={<Screen23_AuthForgotPassword />} />
+          <Route path="/reset-password" element={<Screen24_AuthResetPassword />} />
+        </Route>
 
-      {isAdminScreen && (
-        <div className="flex-1 flex flex-col md:flex-row">
-          <AdminSidebar />
-          <div className="flex-1 flex flex-col min-w-0">
-            {/* Admin Main Top Header */}
-            <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <span className="font-semibold text-amber-700">Admin Console</span>
-                <span aria-hidden="true">/</span>
-                <span className="capitalize">{currentScreen.replace('admin-', '').replace(/-/g, ' ')}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded font-semibold text-[11px]">
-                  Administrative Privilege
-                </span>
-              </div>
-            </header>
-            <main className="flex-1 p-6 sm:p-8 overflow-y-auto">{renderActiveScreen()}</main>
-          </div>
-        </div>
-      )}
+        {/* 3. Registered User Routes (Screens 8 - 20) */}
+        <Route
+          path="/user"
+          element={
+            <ProtectedUserRoute>
+              <UserLayout />
+            </ProtectedUserRoute>
+          }
+        >
+          <Route index element={<Navigate to="/user/dashboard" replace />} />
+          <Route path="dashboard" element={<Screen08_UserDashboard />} />
+          <Route path="ai-assistant" element={<Screen09_UserAIAssistant />} />
+          <Route path="standards" element={<Screen10_UserStandardsExplorer />} />
+          <Route path="standards/:id" element={<Screen11_UserStandardDetail />} />
+          <Route path="compliance" element={<Screen12_UserComplianceWizard />} />
+          <Route path="compliance/:id/results" element={<Screen13_UserComplianceResults />} />
+          <Route path="compliance/results" element={<Screen13_UserComplianceResults />} />
+          <Route path="pdf-analysis" element={<Screen14_UserPDFAnalysis />} />
+          <Route path="licence-verification" element={<Screen15_UserLicenceVerification />} />
+          <Route path="laboratories" element={<Screen16_UserLabFinder />} />
+          <Route path="laboratories/:id" element={<Screen17_UserLabDetail />} />
+          <Route path="reports" element={<Screen18_UserReportsHistory />} />
+          <Route path="profile" element={<Screen19_UserProfile />} />
+          <Route path="settings" element={<Screen20_UserSettings />} />
+        </Route>
+
+        {/* 4. Administrator Routes (Screens 25 - 35) */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedAdminRoute>
+              <AdminLayout />
+            </ProtectedAdminRoute>
+          }
+        >
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="dashboard" element={<Screen25_AdminDashboard />} />
+          <Route path="standards" element={<Screen26_AdminManageStandards />} />
+          <Route path="standards/create" element={<Screen27_AdminAddEditStandard />} />
+          <Route path="standards/:id/edit" element={<Screen27_AdminAddEditStandard />} />
+          <Route path="categories" element={<Screen28_AdminProductCategories />} />
+          <Route path="compliance-rules" element={<Screen29_AdminComplianceRules />} />
+          <Route path="laboratories" element={<Screen30_AdminTestingLabs />} />
+          <Route path="users" element={<Screen31_AdminUserManagement />} />
+          <Route path="knowledge-base" element={<Screen32_AdminRAGKnowledgeBase />} />
+          <Route path="documents" element={<Screen33_AdminDocumentManagement />} />
+          <Route path="system-logs" element={<Screen34_AdminSystemLogs />} />
+          <Route path="settings" element={<Screen35_AdminSettings />} />
+        </Route>
+
+        {/* 5. Catch-All Route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </div>
   );
 };
 
 export default function App() {
   return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
+    <BrowserRouter>
+      <AppProvider>
+        <AppShell />
+      </AppProvider>
+    </BrowserRouter>
   );
 }

@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { ShieldCheck, Lock, Mail, ArrowRight, User, Building, CheckCircle2 } from 'lucide-react';
 
 export const Screen22_AuthRegister: React.FC = () => {
   const { navigate, setRole } = useApp();
+  const [searchParams] = useSearchParams();
+  const redirectPath = searchParams.get('redirect');
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -16,7 +19,7 @@ export const Screen22_AuthRegister: React.FC = () => {
     e.preventDefault();
     // Strictly registers as User (Manufacturer/Importer/MSME)
     setRole('user');
-    navigate('user-dashboard');
+    navigate(redirectPath && !redirectPath.startsWith('/admin') ? redirectPath : '/user/dashboard');
   };
 
   return (
@@ -167,12 +170,12 @@ export const Screen22_AuthRegister: React.FC = () => {
 
           <div className="mt-5 text-center text-xs text-slate-500">
             Already registered?{' '}
-            <button
-              onClick={() => navigate('auth-login')}
+            <Link
+              to={redirectPath ? `/login?redirect=${encodeURIComponent(redirectPath)}` : '/login'}
               className="text-blue-600 font-semibold hover:underline"
             >
               Log in here
-            </button>
+            </Link>
           </div>
         </div>
       </div>

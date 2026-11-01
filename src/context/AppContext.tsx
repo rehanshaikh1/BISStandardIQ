@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import {
   ScreenId,
   UserRole,
@@ -12,6 +12,7 @@ import {
   AIChatMessage,
   PDFAnalysisDoc,
 } from '../types';
+import { useNavigate } from 'react-router-dom';
 import {
   INITIAL_STANDARDS,
   INITIAL_TESTING_LABS,
@@ -21,6 +22,44 @@ import {
   INITIAL_SYSTEM_LOGS,
   INITIAL_ASSESSMENTS,
 } from '../data/mockData';
+
+export const SCREEN_TO_ROUTE: Record<ScreenId, string> = {
+  'public-landing': '/',
+  'public-standards-explorer': '/standards',
+  'public-standard-detail': '/standards/is-13252-1',
+  'public-compliance-checker': '/compliance-checker',
+  'public-licence-verification': '/verify-licence',
+  'public-lab-finder': '/laboratories',
+  'public-lab-detail': '/laboratories/lab-ertl-north',
+  'user-dashboard': '/user/dashboard',
+  'user-ai-assistant': '/user/ai-assistant',
+  'user-standards-explorer': '/user/standards',
+  'user-standard-detail': '/user/standards/is-13252-1',
+  'user-compliance-wizard': '/user/compliance',
+  'user-compliance-results': '/user/compliance/assess-101/results',
+  'user-pdf-analysis': '/user/pdf-analysis',
+  'user-licence-verification': '/user/licence-verification',
+  'user-lab-finder': '/user/laboratories',
+  'user-lab-detail': '/user/laboratories/lab-ertl-north',
+  'user-reports-history': '/user/reports',
+  'user-profile': '/user/profile',
+  'user-settings': '/user/settings',
+  'auth-login': '/login',
+  'auth-register': '/register',
+  'auth-forgot-password': '/forgot-password',
+  'auth-reset-password': '/reset-password',
+  'admin-dashboard': '/admin/dashboard',
+  'admin-manage-standards': '/admin/standards',
+  'admin-add-edit-standard': '/admin/standards/create',
+  'admin-product-categories': '/admin/categories',
+  'admin-compliance-rules': '/admin/compliance-rules',
+  'admin-testing-labs': '/admin/laboratories',
+  'admin-user-management': '/admin/users',
+  'admin-rag-knowledge-base': '/admin/knowledge-base',
+  'admin-document-management': '/admin/documents',
+  'admin-system-logs': '/admin/system-logs',
+  'admin-settings': '/admin/settings',
+};
 
 interface AppContextType {
   currentScreen: ScreenId;
@@ -41,13 +80,16 @@ interface AppContextType {
   chatMessages: AIChatMessage[];
   pdfDocs: PDFAnalysisDoc[];
   guestModalOpen: boolean;
-  guestModalConfig: { title: string; description: string; targetScreen?: ScreenId };
+  guestModalConfig: { title: string; description: string; targetScreen?: ScreenId; targetPath?: string };
+  // Mobile drawer states
+  isMobileSidebarOpen: boolean;
+  setIsMobileSidebarOpen: (open: boolean) => void;
   // Navigation & Actions
-  navigate: (screen: ScreenId, opts?: { standardId?: string; labId?: string }) => void;
+  navigate: (pathOrScreen: string, opts?: { standardId?: string; labId?: string }) => void;
   setRole: (role: UserRole) => void;
-  openGuestModal: (title?: string, description?: string, targetScreen?: ScreenId) => void;
+  openGuestModal: (title?: string, description?: string, targetScreenOrPath?: string) => void;
   closeGuestModal: () => void;
-  requireAuth: (targetScreen: ScreenId, featureName?: string) => boolean;
+  requireAuth: (targetPathOrScreen: string, featureName?: string) => boolean;
   toggleSaveStandard: (id: string) => void;
   toggleSaveLab: (id: string) => void;
   verifyLicenceNumber: (query: string, type: 'ISI' | 'CRS') => LicenceVerificationResult;
@@ -55,6 +97,9 @@ interface AppContextType {
   setActiveAssessment: (assessment: ComplianceAssessment | null) => void;
   setSelectedStandardById: (id: string) => void;
   setSelectedLabById: (id: string) => void;
+  getStandardById: (id?: string) => BISStandard;
+  getLabById: (id?: string) => TestingLab;
+  getAssessmentById: (id?: string) => ComplianceAssessment;
   sendChatMessage: (content: string) => void;
   clearChat: () => void;
   uploadPDFAnalysis: (file: { name: string; size: number }) => PDFAnalysisDoc;
@@ -72,9 +117,37 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const routerNavigate = useNavigate();
+
+  // Read persisted role from sessionStorage so refreshes preserve logged in state
+  const [userRole, setUserRole] = useState<UserRole>(() => {
+    const saved = sessionStorage.getItem('bis_user_role') as UserRole;
+    if (saved === 'user' || saved === 'admin') return saved;
+    // Also check current URL
+    if (typeof window !== 'undefined') {
+      if (window.location.pathname.startsWith('/admin')) return 'admin';
+      if (window.location.pathname.startsWith('/user')) return 'user';
+    }
+    return 'guest';
+  });
+
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
+    const role = sessionStorage.getItem('bis_user_role') as UserRole;
+    if (role === 'admin') {
+      return {
+        ...INITIAL_USER_PROFILE,
+        fullName: 'Admin Director (BIS Operations)',
+        email: 'admin.director@standardsiq.gov.in',
+        role: 'admin',
+        businessType: 'Consultant / Lab',
+      };
+    }
+    if (role === 'user') return INITIAL_USER_PROFILE;
+    return null;
+  });
+
   const [currentScreen, setCurrentScreen] = useState<ScreenId>('public-landing');
-  const [userRole, setUserRole] = useState<UserRole>('guest');
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const [standards, setStandards] = useState<BISStandard[]>(INITIAL_STANDARDS);
   const [selectedStandardId, setSelectedStandardId] = useState<string>(INITIAL_STANDARDS[0].id);
@@ -102,6 +175,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     title: string;
     description: string;
     targetScreen?: ScreenId;
+    targetPath?: string;
   }>({
     title: 'Unlock the Full Power of StandardsIQ',
     description: 'Create a free account to access AI-powered compliance guidance, analyse your documents and save your compliance reports.',
@@ -151,29 +225,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     },
   ]);
 
-  const selectedStandard =
-    standards.find((s) => s.id === selectedStandardId) || standards[0];
-  const selectedLab = labs.find((l) => l.id === selectedLabId) || labs[0];
-
-  const navigate = (screen: ScreenId, opts?: { standardId?: string; labId?: string }) => {
-    if (opts?.standardId) setSelectedStandardId(opts.standardId);
-    if (opts?.labId) setSelectedLabId(opts.labId);
-    setCurrentScreen(screen);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
+  // Keep user profile in sync with role
   const setRole = (role: UserRole) => {
     setUserRole(role);
+    sessionStorage.setItem('bis_user_role', role);
+
     if (role === 'guest') {
       setUserProfile(null);
-      if (currentScreen.startsWith('user-') || currentScreen.startsWith('admin-')) {
-        setCurrentScreen('public-landing');
-      }
     } else if (role === 'user') {
       setUserProfile(INITIAL_USER_PROFILE);
-      if (currentScreen.startsWith('admin-')) {
-        setCurrentScreen('user-dashboard');
-      }
     } else if (role === 'admin') {
       setUserProfile({
         ...INITIAL_USER_PROFILE,
@@ -182,39 +242,99 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         role: 'admin',
         businessType: 'Consultant / Lab',
       });
-      if (currentScreen.startsWith('public-') || currentScreen.startsWith('user-')) {
-        setCurrentScreen('admin-dashboard');
+    }
+  };
+
+  const selectedStandard =
+    standards.find((s) => s.id === selectedStandardId) || standards[0];
+  const selectedLab = labs.find((l) => l.id === selectedLabId) || labs[0];
+
+  const getStandardById = (id?: string): BISStandard => {
+    if (!id) return selectedStandard;
+    const found = standards.find(
+      (s) => s.id === id || s.isNumber.toLowerCase().replace(/[^a-z0-9]/g, '-') === id.toLowerCase()
+    );
+    return found || standards[0];
+  };
+
+  const getLabById = (id?: string): TestingLab => {
+    if (!id) return selectedLab;
+    const found = labs.find((l) => l.id === id);
+    return found || labs[0];
+  };
+
+  const getAssessmentById = (id?: string): ComplianceAssessment => {
+    if (!id) return activeAssessment || assessments[0];
+    const found = assessments.find((a) => a.id === id);
+    return found || activeAssessment || assessments[0];
+  };
+
+  // Programmatic navigation dispatcher using React Router
+  const navigate = (pathOrScreen: string, opts?: { standardId?: string; labId?: string }) => {
+    if (opts?.standardId) setSelectedStandardId(opts.standardId);
+    if (opts?.labId) setSelectedLabId(opts.labId);
+
+    // Map screen ID to path if needed
+    let targetPath = pathOrScreen;
+    if (!pathOrScreen.startsWith('/')) {
+      const mapped = SCREEN_TO_ROUTE[pathOrScreen as ScreenId];
+      if (mapped) {
+        targetPath = mapped;
+        if (opts?.standardId && (pathOrScreen === 'public-standard-detail' || pathOrScreen === 'user-standard-detail')) {
+          targetPath = pathOrScreen.startsWith('user-') ? `/user/standards/${opts.standardId}` : `/standards/${opts.standardId}`;
+        } else if (opts?.labId && (pathOrScreen === 'public-lab-detail' || pathOrScreen === 'user-lab-detail')) {
+          targetPath = pathOrScreen.startsWith('user-') ? `/user/laboratories/${opts.labId}` : `/laboratories/${opts.labId}`;
+        }
       }
+    }
+
+    try {
+      routerNavigate(targetPath);
+    } catch {
+      if (typeof window !== 'undefined') {
+        window.history.pushState({}, '', targetPath);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      }
+    }
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const openGuestModal = (
     title = 'Unlock the Full Power of StandardsIQ',
     description = 'Create a free account to access AI-powered compliance guidance, analyse your documents and save your compliance reports.',
-    targetScreen?: ScreenId
+    targetScreenOrPath?: string
   ) => {
-    setGuestModalConfig({ title, description, targetScreen });
+    setGuestModalConfig({
+      title,
+      description,
+      targetPath: targetScreenOrPath?.startsWith('/') ? targetScreenOrPath : undefined,
+    });
     setGuestModalOpen(true);
   };
 
   const closeGuestModal = () => setGuestModalOpen(false);
 
-  const requireAuth = (targetScreen: ScreenId, featureName = 'this feature'): boolean => {
+  const requireAuth = (targetPathOrScreen: string, featureName = 'this feature'): boolean => {
     if (userRole === 'guest') {
       openGuestModal(
         'Unlock the Full Power of StandardsIQ',
         `Create a free account or log in to access ${featureName}, download personalized compliance audits, and unlock deep AI analysis.`,
-        targetScreen
+        targetPathOrScreen
       );
       return false;
     }
-    navigate(targetScreen);
+    navigate(targetPathOrScreen);
     return true;
   };
 
   const toggleSaveStandard = (id: string) => {
     if (userRole === 'guest') {
-      openGuestModal('Save Standards to Your Workspace', 'Create a free account to save standards, track regulatory updates, and bookmark important clauses.');
+      openGuestModal(
+        'Save Standards to Your Workspace',
+        'Create a free account to save standards, track regulatory updates, and bookmark important clauses.'
+      );
       return;
     }
     setSavedStandardIds((prev) =>
@@ -224,7 +344,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const toggleSaveLab = (id: string) => {
     if (userRole === 'guest') {
-      openGuestModal('Save Accredited Laboratories', 'Create an account to bookmark NABL test labs and request direct fee quotations.');
+      openGuestModal(
+        'Save Accredited Laboratories',
+        'Create an account to bookmark NABL test labs and request direct fee quotations.'
+      );
       return;
     }
     setSavedLabIds((prev) =>
@@ -242,7 +365,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (existing) {
       result = existing;
     } else {
-      // Generate synthetic verification response if format looks plausible
       const isCM = cleanQuery.startsWith('CM/L-') || /^\d{7}$/.test(cleanQuery);
       const isR = cleanQuery.startsWith('R-') || /^41\d{6}$/.test(cleanQuery);
 
@@ -320,7 +442,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     setChatMessages((prev) => [...prev, userMsg]);
 
-    // Generate intelligent AI response based on Indian BIS domain
     setTimeout(() => {
       let replyContent = '';
       let citations: AIChatMessage['citations'] = [];
@@ -440,7 +561,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return newDoc;
   };
 
-  // Admin actions
   const adminAddStandard = (std: BISStandard) => {
     setStandards((prev) => [std, ...prev]);
     setSystemLogs((prev) => [
@@ -519,6 +639,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         pdfDocs,
         guestModalOpen,
         guestModalConfig,
+        isMobileSidebarOpen,
+        setIsMobileSidebarOpen,
         navigate,
         setRole,
         openGuestModal,
@@ -531,6 +653,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setActiveAssessment,
         setSelectedStandardById,
         setSelectedLabById,
+        getStandardById,
+        getLabById,
+        getAssessmentById,
         sendChatMessage,
         clearChat,
         uploadPDFAnalysis,

@@ -117,7 +117,7 @@ export const Screen34_AdminSystemLogs: React.FC = () => {
       {/* Logs Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs font-mono">
+          <table className="w-full text-left text-xs font-mono min-w-[700px]">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-sans font-semibold uppercase tracking-wider text-[11px]">
               <tr>
                 <th className="py-3 px-4">Timestamp</th>

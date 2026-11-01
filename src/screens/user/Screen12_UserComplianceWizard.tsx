@@ -108,7 +108,7 @@ export const Screen12_UserComplianceWizard: React.FC = () => {
     };
 
     saveNewAssessment(assessment);
-    navigate('user-compliance-results');
+    navigate(`/user/compliance/${assessment.id}/results`);
   };
 
   return (

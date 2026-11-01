@@ -56,7 +56,7 @@ export const Screen26_AdminManageStandards: React.FC = () => {
         </div>
 
         <button
-          onClick={() => navigate('admin-add-edit-standard')}
+          onClick={() => navigate('/admin/standards/create')}
           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors shrink-0"
         >
           <Plus className="w-4 h-4" />
@@ -152,7 +152,7 @@ export const Screen26_AdminManageStandards: React.FC = () => {
                       <button
                         onClick={() => {
                           setSelectedStandardById(std.id);
-                          navigate('admin-add-edit-standard');
+                          navigate(`/admin/standards/${std.id}/edit`);
                         }}
                         className="p-1 text-slate-600 hover:text-blue-600 rounded hover:bg-slate-100"
                         title="Edit Standard"

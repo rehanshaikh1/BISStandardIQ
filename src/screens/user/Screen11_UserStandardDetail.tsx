@@ -1,4 +1,5 @@
 import React from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
   ArrowLeft,
@@ -15,8 +16,10 @@ import {
 } from 'lucide-react';
 
 export const Screen11_UserStandardDetail: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
   const {
     selectedStandard,
+    getStandardById,
     savedStandardIds,
     toggleSaveStandard,
     navigate,
@@ -25,7 +28,7 @@ export const Screen11_UserStandardDetail: React.FC = () => {
     setSelectedStandardById,
   } = useApp();
 
-  const std = selectedStandard;
+  const std = id ? getStandardById(id) : selectedStandard;
   const isSaved = savedStandardIds.includes(std.id);
 
   // Related standards
@@ -37,13 +40,13 @@ export const Screen11_UserStandardDetail: React.FC = () => {
     <div className="space-y-6">
       {/* Top Navigation */}
       <div className="flex items-center justify-between">
-        <button
-          onClick={() => navigate('user-standards-explorer')}
+        <Link
+          to="/user/standards"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Standards Explorer</span>
-        </button>
+        </Link>
 
         <div className="flex items-center gap-2">
           <button

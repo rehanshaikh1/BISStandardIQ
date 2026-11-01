@@ -1,53 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useLocation, Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { BISStandard } from '../../types';
 import { ArrowLeft, Save, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 export const Screen27_AdminAddEditStandard: React.FC = () => {
-  const { selectedStandard, adminAddStandard, adminUpdateStandard, navigate } = useApp();
+  const { id } = useParams<{ id?: string }>();
+  const location = useLocation();
+  const { selectedStandard, getStandardById, adminAddStandard, adminUpdateStandard, navigate } = useApp();
 
-  const isEditing = Boolean(selectedStandard?.id);
+  const isEditing = Boolean(id);
+  const activeStd = id ? getStandardById(id) : (!location.pathname.includes('/create') ? selectedStandard : null);
 
-  const [isNumber, setIsNumber] = useState(selectedStandard?.isNumber || 'IS 18000:2026');
+  const [isNumber, setIsNumber] = useState(activeStd?.isNumber || 'IS 18000:2026');
   const [title, setTitle] = useState(
-    selectedStandard?.title || 'Smart Grid Energy Storage Systems – Safety Specifications'
+    activeStd?.title || 'Smart Grid Energy Storage Systems – Safety Specifications'
   );
-  const [category, setCategory] = useState(selectedStandard?.productCategory || 'Batteries');
-  const [editionYear, setEditionYear] = useState(selectedStandard?.editionYear || 2026);
+  const [category, setCategory] = useState(activeStd?.productCategory || 'Batteries');
+  const [editionYear, setEditionYear] = useState(activeStd?.editionYear || 2026);
   const [scheme, setScheme] = useState<BISStandard['scheme']>(
-    selectedStandard?.scheme || 'CRS (Scheme-II)'
+    activeStd?.scheme || 'CRS (Scheme-II)'
   );
   const [qcoStatus, setQcoStatus] = useState<BISStandard['qcoStatus']>(
-    selectedStandard?.qcoStatus || 'Mandatory'
+    activeStd?.qcoStatus || 'Mandatory'
   );
   const [qcoOrderNumber, setQcoOrderNumber] = useState(
-    selectedStandard?.qcoOrderNumber || 'S.O. 5012(E) / Ministry of Power'
+    activeStd?.qcoOrderNumber || 'S.O. 5012(E) / Ministry of Power'
   );
   const [qcoEffectiveDate, setQcoEffectiveDate] = useState(
-    selectedStandard?.qcoEffectiveDate || '2026-12-01'
+    activeStd?.qcoEffectiveDate || '2026-12-01'
   );
   const [ministry, setMinistry] = useState<BISStandard['ministry']>(
-    selectedStandard?.ministry || 'Ministry of Power'
+    activeStd?.ministry || 'Ministry of Power'
   );
   const [overview, setOverview] = useState(
-    selectedStandard?.overview ||
+    activeStd?.overview ||
       'Defines safety requirements, thermal runaway suppression, and grid isolation for stationary battery storage.'
   );
   const [scope, setScope] = useState(
-    selectedStandard?.scope || 'Applicable to industrial commercial BESS installations exceeding 10 kWh.'
+    activeStd?.scope || 'Applicable to industrial commercial BESS installations exceeding 10 kWh.'
   );
   const [officialBisUrl, setOfficialBisUrl] = useState(
-    selectedStandard?.officialBisUrl || 'https://www.services.bis.gov.in/standards'
+    activeStd?.officialBisUrl || 'https://www.services.bis.gov.in/standards'
   );
   const [pdfReferenceUrl, setPdfReferenceUrl] = useState(
-    selectedStandard?.pdfReferenceUrl || 'https://bis.gov.in/standards/doc.pdf'
+    activeStd?.pdfReferenceUrl || 'https://bis.gov.in/standards/doc.pdf'
   );
+
+  useEffect(() => {
+    if (activeStd && isEditing) {
+      setIsNumber(activeStd.isNumber);
+      setTitle(activeStd.title);
+      setCategory(activeStd.productCategory);
+      setEditionYear(activeStd.editionYear);
+      setScheme(activeStd.scheme);
+      setQcoStatus(activeStd.qcoStatus);
+      setQcoOrderNumber(activeStd.qcoOrderNumber || '');
+      setQcoEffectiveDate(activeStd.qcoEffectiveDate || '');
+      setMinistry(activeStd.ministry);
+      setOverview(activeStd.overview);
+      setScope(activeStd.scope);
+      setOfficialBisUrl(activeStd.officialBisUrl);
+      setPdfReferenceUrl(activeStd.pdfReferenceUrl || '');
+    }
+  }, [id]);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
 
     const standardObj: BISStandard = {
-      id: isEditing ? selectedStandard.id : `is-${Date.now()}`,
+      id: isEditing && activeStd ? activeStd.id : `is-${Date.now()}`,
       isNumber,
       title,
       productCategory: category,
@@ -60,7 +82,7 @@ export const Screen27_AdminAddEditStandard: React.FC = () => {
       overview,
       scope,
       applicability: ['Commercial BESS Units', 'Industrial Battery Cabinets'],
-      keyClauses: selectedStandard?.keyClauses || [
+      keyClauses: activeStd?.keyClauses || [
         {
           clauseNumber: 'Clause 6.1',
           title: 'Thermal Propagation Invariant',
@@ -84,20 +106,20 @@ export const Screen27_AdminAddEditStandard: React.FC = () => {
       adminAddStandard(standardObj);
     }
 
-    navigate('admin-manage-standards');
+    navigate('/admin/standards');
   };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Top Bar */}
       <div className="flex items-center justify-between">
-        <button
-          onClick={() => navigate('admin-manage-standards')}
+        <Link
+          to="/admin/standards"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Standards Catalogue</span>
-        </button>
+        </Link>
       </div>
 
       {/* Main Form */}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
   ArrowLeft,
@@ -15,8 +16,9 @@ import {
 } from 'lucide-react';
 
 export const Screen17_UserLabDetail: React.FC = () => {
-  const { selectedLab, savedLabIds, toggleSaveLab, navigate } = useApp();
-  const lab = selectedLab;
+  const { id } = useParams<{ id: string }>();
+  const { selectedLab, getLabById, savedLabIds, toggleSaveLab } = useApp();
+  const lab = id ? getLabById(id) : selectedLab;
   const isSaved = savedLabIds.includes(lab.id);
 
   const [isQuoteSent, setIsQuoteSent] = useState(false);
@@ -33,13 +35,13 @@ export const Screen17_UserLabDetail: React.FC = () => {
     <div className="space-y-6">
       {/* Top Bar */}
       <div className="flex items-center justify-between">
-        <button
-          onClick={() => navigate('user-lab-finder')}
+        <Link
+          to="/user/laboratories"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Laboratory Finder</span>
-        </button>
+        </Link>
 
         <div className="flex items-center gap-2">
           <button

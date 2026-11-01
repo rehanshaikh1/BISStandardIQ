@@ -1,4 +1,5 @@
 import React from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
   ArrowLeft,
@@ -14,22 +15,23 @@ import {
 } from 'lucide-react';
 
 export const Screen03_PublicStandardDetail: React.FC = () => {
-  const { selectedStandard, navigate, openGuestModal, setSelectedStandardById } = useApp();
+  const { id } = useParams<{ id: string }>();
+  const { selectedStandard, getStandardById, openGuestModal, navigate } = useApp();
 
-  const std = selectedStandard;
+  const std = id ? getStandardById(id) : selectedStandard;
 
   return (
     <div className="bg-[#F8FAFC] min-h-screen py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         {/* Navigation Breadcrumbs */}
         <div className="flex items-center justify-between">
-          <button
-            onClick={() => navigate('public-standards-explorer')}
+          <Link
+            to="/standards"
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back to Standards Directory</span>
-          </button>
+          </Link>
 
           <div className="flex items-center gap-2">
             <button

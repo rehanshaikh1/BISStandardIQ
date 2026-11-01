@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
   Download,
@@ -15,10 +16,11 @@ import {
 } from 'lucide-react';
 
 export const Screen13_UserComplianceResults: React.FC = () => {
-  const { activeAssessment, navigate, labs, setSelectedLabById } = useApp();
+  const { id } = useParams<{ id: string }>();
+  const { activeAssessment, getAssessmentById, navigate, labs, setSelectedLabById } = useApp();
   const [downloadNotice, setDownloadNotice] = useState(false);
 
-  const assess = activeAssessment;
+  const assess = id ? getAssessmentById(id) : activeAssessment;
 
   if (!assess) {
     return (

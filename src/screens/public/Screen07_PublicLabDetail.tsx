@@ -1,4 +1,5 @@
 import React from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
   ArrowLeft,
@@ -16,21 +17,22 @@ import {
 } from 'lucide-react';
 
 export const Screen07_PublicLabDetail: React.FC = () => {
-  const { selectedLab, navigate, openGuestModal } = useApp();
-  const lab = selectedLab;
+  const { id } = useParams<{ id: string }>();
+  const { selectedLab, getLabById, openGuestModal, navigate } = useApp();
+  const lab = id ? getLabById(id) : selectedLab;
 
   return (
     <div className="bg-[#F8FAFC] min-h-screen py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         {/* Breadcrumb & Navigation */}
         <div className="flex items-center justify-between">
-          <button
-            onClick={() => navigate('public-lab-finder')}
+          <Link
+            to="/laboratories"
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back to Laboratory Directory</span>
-          </button>
+          </Link>
 
           <div className="flex items-center gap-2">
             <button

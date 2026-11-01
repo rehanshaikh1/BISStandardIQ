@@ -127,7 +127,7 @@ export const Screen18_UserReportsHistory: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => navigate('user-compliance-results')}
+                      onClick={() => navigate(`/user/compliance/${a.id}/results`)}
                       className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold"
                     >
                       View Report

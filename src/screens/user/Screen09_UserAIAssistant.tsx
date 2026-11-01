@@ -48,9 +48,9 @@ export const Screen09_UserAIAssistant: React.FC = () => {
   }, [chatMessages, isTyping]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-140px)]">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[calc(100vh-160px)] lg:h-[calc(100vh-140px)]">
       {/* Left 8 cols: Conversational Workspace */}
-      <div className="lg:col-span-8 flex flex-col bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden h-full">
+      <div className="lg:col-span-8 flex flex-col bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden h-[540px] sm:h-[600px] lg:h-full">
         {/* Assistant Header */}
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/60">
           <div className="flex items-center gap-3">

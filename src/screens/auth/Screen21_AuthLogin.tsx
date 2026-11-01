@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { ShieldCheck, Lock, Mail, ArrowRight, CheckCircle2, ShieldAlert } from 'lucide-react';
 
 export const Screen21_AuthLogin: React.FC = () => {
   const { navigate, setRole } = useApp();
+  const [searchParams] = useSearchParams();
+  const redirectPath = searchParams.get('redirect');
 
   const [email, setEmail] = useState('rehanshaikh1457@gmail.com');
   const [password, setPassword] = useState('••••••••••••');
@@ -13,10 +16,10 @@ export const Screen21_AuthLogin: React.FC = () => {
     e.preventDefault();
     if (email.toLowerCase().includes('admin')) {
       setRole('admin');
-      navigate('admin-dashboard');
+      navigate(redirectPath?.startsWith('/admin') ? redirectPath : '/admin/dashboard');
     } else {
       setRole('user');
-      navigate('user-dashboard');
+      navigate(redirectPath && !redirectPath.startsWith('/admin') ? redirectPath : '/user/dashboard');
     }
   };
 
@@ -138,7 +141,7 @@ export const Screen21_AuthLogin: React.FC = () => {
               <button
                 onClick={() => {
                   setRole('user');
-                  navigate('user-dashboard');
+                  navigate(redirectPath && !redirectPath.startsWith('/admin') ? redirectPath : '/user/dashboard');
                 }}
                 className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded text-[11px] font-semibold transition-colors text-center"
               >
@@ -147,7 +150,7 @@ export const Screen21_AuthLogin: React.FC = () => {
               <button
                 onClick={() => {
                   setRole('admin');
-                  navigate('admin-dashboard');
+                  navigate(redirectPath?.startsWith('/admin') ? redirectPath : '/admin/dashboard');
                 }}
                 className="flex-1 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded text-[11px] font-semibold transition-colors text-center inline-flex items-center justify-center gap-1"
               >
@@ -159,12 +162,12 @@ export const Screen21_AuthLogin: React.FC = () => {
 
           <div className="mt-5 text-center text-xs text-slate-500">
             Don't have an account?{' '}
-            <button
-              onClick={() => navigate('auth-register')}
+            <Link
+              to={redirectPath ? `/register?redirect=${encodeURIComponent(redirectPath)}` : '/register'}
               className="text-blue-600 font-semibold hover:underline"
             >
               Register here
-            </button>
+            </Link>
           </div>
         </div>
       </div>
