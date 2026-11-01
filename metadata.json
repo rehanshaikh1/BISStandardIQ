@@ -1,0 +1,6 @@
+{
+  "name": "BIS StandardsIQ - AI-Powered BIS Standards Discovery & Compliance Platform",
+  "description": "Intelligent Standards. Simplified Compliance. Discover Indian Standards, simplify product compliance, verify licences and find accredited testing laboratories.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
