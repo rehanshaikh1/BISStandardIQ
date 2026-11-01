@@ -15,7 +15,7 @@ import {
   BadgeAlert,
   Layers,
 } from 'lucide-react';
-
+import heroImage from "../../assets/images/hero_bis_standards_1793539430782.jpg";
 export const Screen01_PublicLanding: React.FC = () => {
   const { navigate, openGuestModal } = useApp();
 
@@ -86,7 +86,7 @@ export const Screen01_PublicLanding: React.FC = () => {
             <div className="lg:col-span-5 relative">
               <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-xl bg-slate-900 group">
                 <img
-                  src="/src/assets/images/hero_bis_standards_1793539430782.jpg"
+                  src={heroImage}
                   alt="BIS Compliance and Testing Laboratory in India"
                   referrerPolicy="no-referrer"
                   className="w-full h-[380px] object-cover group-hover:scale-[1.01] transition-transform duration-300"
